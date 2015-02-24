@@ -1,14 +1,14 @@
 Apache sample setup using mod_wsgi
 
-WSGIDaemonProcess AutoIndexPGroup user=nate group=nate threads=5
-WSGIScriptAlias /filesnav/Sync/Photos /srv/AutoIndex/AutoIndex.wsgi
+WSGIDaemonProcess AutoGalleryIndexPGroup user=nate group=nate threads=5
+WSGIScriptAlias /filesnav/Sync/Photos /srv/AutoGalleryIndex/AutoGalleryIndex.wsgi
 
 ...
 
-<Directory /srv/AutoIndex/>
+<Directory /srv/AutoGalleryIndex/>
     Options -Indexes
     
-    WSGIProcessGroup AutoIndexPGroup
+    WSGIProcessGroup AutoGalleryIndexPGroup
     WSGIApplicationGroup %{GLOBAL}
     WSGIScriptReloading On
     WSGIPassAuthorization On

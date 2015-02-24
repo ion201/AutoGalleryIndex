@@ -7,7 +7,7 @@ app = flask.Flask(__name__)
 
 @app.route('/', methods=['GET'])
 def rootdir():
-    return flask.render_template('Gallery.html')
+    return 'hello world'
 
 
 if __name__ == '__main__':
