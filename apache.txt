@@ -1,0 +1,23 @@
+Apache sample setup using mod_wsgi
+
+WSGIDaemonProcess AutoIndexPGroup user=nate group=nate threads=5
+WSGIScriptAlias /filesnav/Sync/Photos /srv/AutoIndex/AutoIndex.wsgi
+
+...
+
+<Directory /srv/AutoIndex/>
+    Options -Indexes
+    
+    WSGIProcessGroup AutoIndexPGroup
+    WSGIApplicationGroup %{GLOBAL}
+    WSGIScriptReloading On
+    WSGIPassAuthorization On
+
+    AuthType Basic
+    AuthName "Restricted Files"
+    AuthUserFile /etc/apache2/users
+    AuthGroupFile /etc/apache2/groups
+    Require group Admins
+
+</Directory>
+
