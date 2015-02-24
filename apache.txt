@@ -10,7 +10,8 @@ WSGIScriptAlias /filesnav/Sync/Photos /srv/AutoGalleryIndex/AutoGalleryIndex.wsg
     
     WSGIProcessGroup AutoGalleryIndexPGroup
     WSGIApplicationGroup %{GLOBAL}
-    WSGIScriptReloading On
+    
+    (the rest is optional)
     WSGIPassAuthorization On
 
     AuthType Basic
