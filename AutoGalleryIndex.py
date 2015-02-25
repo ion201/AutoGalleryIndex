@@ -5,13 +5,21 @@ import os
 
 app = flask.Flask(__name__)
 
+
 @app.route('/', methods=['GET'])
-def rootdir():
-    WEBROOT = '/var/www'
+def gallery():
+    DOCROOT = '/var/www'
 
     env_vars = {}
-    env_vars['current_directory'] = WEBROOT + flask.request.script_root
+    env_vars['current_directory'] = DOCROOT + flask.request.script_root
     env_vars['autogalleryindex_version'] = '0.1.0'
+
+    if 'dest' in flask.request.args:
+        if not os.path.exists(env_vars['current_directory'] + '_static'):
+            os.symlink(env_vars['current_directory'], env_vars['current_directory'] + '_static')
+        return flask.redirect(flask.request.script_root + '_static/' + flask.request.args['dest'])
+
+    env_vars['dir_contents'] = sorted(os.listdir(env_vars['current_directory']))
 
     return flask.render_template('Gallery.html', **env_vars)
 

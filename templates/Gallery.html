@@ -9,5 +9,9 @@
 <body>
     <h1>Index of {{ current_directory }}</h1>
 
+    {% for thing in dir_contents %}
+        <a href="?dest={{ thing }}">{{ thing }}</p>
+    {% endfor %}
+
     <address>AutoGalleryIndex/{{ autogalleryindex_version }}</address>
 </body>
