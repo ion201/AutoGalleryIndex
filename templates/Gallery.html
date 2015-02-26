@@ -9,8 +9,15 @@
 <body>
     <h1>Index of {{ current_directory }}</h1>
 
-    {% for thing in dir_contents %}
-        <a href="?dest={{ thing }}">{{ thing }}</p>
+    {% for item, type in dir_contents %}
+        <a href="?dest={{ item }}">
+        {% if type == 'd' %}
+            <img src="static/icons/folder_32.png" />
+        {% else %}
+            <img src="../Photos_static/{{ item }}" height=100 width=178 />
+        {% endif %}
+        {{ item }}</a>
+        <br />
     {% endfor %}
 
     <address>AutoGalleryIndex/{{ autogalleryindex_version }}</address>
