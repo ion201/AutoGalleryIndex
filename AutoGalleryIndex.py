@@ -6,19 +6,29 @@ import os
 app = flask.Flask(__name__)
 
 
-@app.route('/', methods=['GET'])
-def gallery():
+@app.route('/<path:subfolder>')
+def gallery(subfolder):
     DOCROOT = '/var/www'
     
     env_vars = {}
+        
+    request_root = '%s/%s' % (flask.request.script_root, subfolder)
+    if request_root.endswith('/'):
+        request_root = request_root[:-1]
+    
+    env_vars['gallery_root'] = flask.request.script_root
 
-    env_vars['current_directory'] = DOCROOT + flask.request.script_root
+    env_vars['current_directory'] = DOCROOT + request_root
     env_vars['autogalleryindex_version'] = '0.1.0'
+    
+    env_vars['request_root'] = request_root
+    env_vars['request_parent'] = '/'.join(request_root.split('/')[:-1])
+    env_vars['subfolder'] = subfolder if subfolder.endswith('/') else subfolder + '/'
 
-    if 'dest' in flask.request.args:
-        if not os.path.exists(env_vars['current_directory'] + '_static'):
-            os.symlink(env_vars['current_directory'], env_vars['current_directory'] + '_static')
-        return flask.redirect(flask.request.script_root + '_static/' + flask.request.args['dest'])
+    symlink_src = DOCROOT + '/' + env_vars['gallery_root'] + '/'
+    symlink_dest = DOCROOT + '/' + env_vars['gallery_root'] + '_static'
+    if not os.path.exists(symlink_dest):
+        os.symlink(symlink_src, symlink_dest)
 
     items = sorted(os.listdir(env_vars['current_directory']))
     env_vars['dir_contents'] = []
@@ -29,6 +39,11 @@ def gallery():
             env_vars['dir_contents'].append((item, 'f'))  # File
 
     return flask.render_template('Gallery.html', **env_vars)
+
+
+@app.route('/')
+def rootdir():
+    return gallery('')
 
 
 if __name__ == '__main__':
