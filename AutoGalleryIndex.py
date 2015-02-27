@@ -62,7 +62,7 @@ def gallery(subfolder):
         os.mkdir(symlink_dest + '/._thumbnails')
     thumbnails(symlink_dest, symlink_dest + '/._thumbnails')
 
-    items = sorted(os.listdir(env_vars['current_directory']))
+    items = os.listdir(env_vars['current_directory'])
     env_vars['dir_contents'] = []
     for item in items:
         if item == '._thumbnails':
@@ -71,7 +71,8 @@ def gallery(subfolder):
             env_vars['dir_contents'].append((item, 'd'))  # Directory
         else:
             env_vars['dir_contents'].append((item, 'f'))  # File
-
+    env_vars['dir_contents'].sort(key=lambda x: x[1] + x[0].lower())
+            
     return flask.render_template('Gallery.html', **env_vars)
 
 
