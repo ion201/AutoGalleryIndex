@@ -8,7 +8,7 @@
 </head>
 
 <body>
-    <h1>Index of {{ current_directory }}</h1>
+    <h1>Index of {{ request_root }}</h1>
 
     <table> 
         {% for item, type in dir_contents %}
