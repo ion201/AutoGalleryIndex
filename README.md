@@ -2,6 +2,11 @@
 
 mod_wsgi application designed to act similar to apache's autoindex but display thumbnail images. Primarily for viewing directories of images.
 
+Dependencies:
+
+`sudo apt-get install libjpeg-dev libtiff5-dev libpng12-dev`
+`sudo pip3 install Pillow`
+
 Steps to set up:
 
 1. Follow sample in apache.txt for setting up vhost. For this example, AutoGalleryIndex is located in the /srv/ folder and the directory/subdirectories we want to replace with it is /filesnav/Sync/Photos.
