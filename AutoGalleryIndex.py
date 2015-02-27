@@ -27,9 +27,9 @@ def thumbnails(img_dir, thumb_dir):
             continue  # Don't thumbnail non images (duh)
         
         thumb_dest = '%s/%s' % (thumb_dir, file_name)
-        #if not os.path.exists(thumb_dest):
-        thumb = Image.open(abs_path).resize((100, 178), Image.ANTIALIAS).filter(ImageFilter.DETAIL)
-        thumb.save(thumb_dest)
+        if not os.path.exists(thumb_dest):
+            thumb = Image.open(abs_path).resize((100, 178), Image.ANTIALIAS).filter(ImageFilter.DETAIL)
+            thumb.save(thumb_dest)
 
 
 @app.route('/<path:subfolder>')
