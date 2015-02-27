@@ -4,27 +4,42 @@
 <head>
     <title>Index of {{ current_directory }}</title>
     <meta charset="utf-8" />
+    <link rel="stylesheet" type="text/css" href="{{ gallery_root }}/static/grid_layout.css" />
 </head>
 
 <body>
     <h1>Index of {{ current_directory }}</h1>
 
-    <a href="{{ request_parent }}">
-    <img src="{{ gallery_root }}/static/icons/folder_32.png" />
-    Back</a><br />
+    <table> 
+        {% for item, type in dir_contents %}
+            {% if loop.index0 % 6 == 0 %}
+                <tr>
+            {% endif %}
+            
+            <td>
+            {% if type == 'b' %}
+                <a href="{{ request_parent }}">
+                <img src="{{ gallery_root }}/static/icons/folder_64.png" /><br />
+                Back</a>
+            {% elif type == 'd' %}
+                <a href="{{ request_root }}/{{ item }}">
+                <img src="{{ gallery_root }}/static/icons/folder_64.png" /><br />
+                {{ item }}
+            {% else %}
+                <a href="{{ gallery_root }}._static/{{ subfolder }}{{ item }}">
+                <img src="{{ gallery_root }}._static/._thumbnails/{{ subfolder }}{{ item }}"
+                     height=100 width=178 />
+            {% endif %}
+            <!--{{ item }}-->
+            </a>
+            </td>
+            
+            {% if (loop.index) % 6 == 0 %}
+                </tr>
+            {% endif %}
+            
+        {% endfor %}
+    </table>
     
-    {% for item, type in dir_contents %}
-        {% if type == 'd' %}
-            <a href="{{ request_root }}/{{ item }}">
-            <img src="{{ gallery_root }}/static/icons/folder_32.png" />
-        {% else %}
-            <a href="{{ gallery_root }}._static/{{ subfolder }}{{ item }}">
-            <img src="{{ gallery_root }}._static/._thumbnails/{{ subfolder }}{{ item }}"
-                 height=100 width=178 />
-        {% endif %}
-        {{ item }}</a>
-        <br />
-    {% endfor %}
-
     <address>AutoGalleryIndex/{{ autogalleryindex_version }}</address>
 </body>

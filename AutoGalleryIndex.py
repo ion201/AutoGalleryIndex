@@ -72,7 +72,8 @@ def gallery(subfolder):
         else:
             env_vars['dir_contents'].append((item, 'f'))  # File
     env_vars['dir_contents'].sort(key=lambda x: x[1] + x[0].lower())
-            
+    env_vars['dir_contents'].insert(0, ('back', 'b'))
+    
     return flask.render_template('Gallery.html', **env_vars)
 
 
