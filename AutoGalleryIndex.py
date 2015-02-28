@@ -28,7 +28,7 @@ def thumbnails(img_dir, thumb_dir):
         
         thumb_dest = '%s/%s' % (thumb_dir, file_name)
         if not os.path.exists(thumb_dest):
-            thumb = Image.open(abs_path).resize((100, 178), Image.ANTIALIAS).filter(ImageFilter.DETAIL)
+            thumb = Image.open(abs_path).resize((178, 100), Image.ANTIALIAS).filter(ImageFilter.DETAIL)
             thumb.save(thumb_dest)
 
 
