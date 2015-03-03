@@ -8,38 +8,40 @@
 </head>
 
 <body>
-    <h1>Index of {{ request_root }}</h1>
+    <div id="content">
+        <h1>Index of {{ request_root }}</h1>
 
-    <table> 
-        {% for item, type in dir_contents %}
-            {% if loop.index0 % 6 == 0 %}
-                <tr>
-            {% endif %}
-            
-            <td>
-            {% if type == 'b' %}
-                <a href="{{ request_parent }}">
-                <img src="{{ gallery_root }}/static/icons/folder_64.png" /><br />
-                Back</a>
-            {% elif type == 'd' %}
-                <a href="{{ request_root }}/{{ item }}">
-                <img src="{{ gallery_root }}/static/icons/folder_64.png" /><br />
-                {{ item }}
-            {% else %}
-                <a href="{{ gallery_root }}._static/{{ subfolder }}{{ item }}">
-                <img src="{{ gallery_root }}._static/._thumbnails/{{ subfolder }}{{ item }}"
-                     height=100 width=178 />
-            {% endif %}
-            <!--{{ item }}-->
-            </a>
-            </td>
-            
-            {% if (loop.index) % 6 == 0 %}
-                </tr>
-            {% endif %}
-            
-        {% endfor %}
-    </table>
+        <table> 
+            {% for item, type in dir_contents %}
+                {% if loop.index0 % items_per_row == 0 %}
+                    <tr>
+                {% endif %}
+                
+                <td>
+                {% if type == 'b' %}
+                    <a href="{{ request_parent }}">
+                    <img src="{{ gallery_root }}/static/icons/folder_64.png" /><br />
+                    Back</a>
+                {% elif type == 'd' %}
+                    <a href="{{ request_root }}/{{ item }}">
+                    <img src="{{ gallery_root }}/static/icons/folder_64.png" /><br />
+                    {{ item }}
+                {% else %}
+                    <a href="{{ gallery_root }}._static/{{ subfolder }}{{ item }}" target="_blank">
+                    <img src="{{ gallery_root }}._static/._thumbnails/{{ subfolder }}{{ item }}"
+                         height=100 width=178 />
+                {% endif %}
+                <!--{{ item }}-->
+                </a>
+                </td>
+                
+                {% if (loop.index) % items_per_row == 0 %}
+                    </tr>
+                {% endif %}
+                
+            {% endfor %}
+        </table>
+    </div>
     
     <address>AutoGalleryIndex/{{ autogalleryindex_version }}</address>
 </body>

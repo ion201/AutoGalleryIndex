@@ -74,6 +74,12 @@ def gallery(subfolder):
     env_vars['dir_contents'].sort(key=lambda x: x[1] + x[0].lower())
     env_vars['dir_contents'].insert(0, ('back', 'b'))
     
+    mobile_tags = ('Android', 'Windows Phone', 'iPod', 'iPhone')
+    if any((tag in flask.request.headers.get('User-Agent') for tag in mobile_tags)):
+        env_vars['items_per_row'] = 3
+    else:
+        env_vars['items_per_row'] = 5
+   
     return flask.render_template('Gallery.html', **env_vars)
 
 
