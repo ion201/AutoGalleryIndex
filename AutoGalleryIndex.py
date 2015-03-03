@@ -8,14 +8,20 @@ app = flask.Flask(__name__)
 
 
 def thumbnails(img_dir, thumb_dir):
+    """Generate thumbnails recursively from img_dir and save images to
+    thumb_dir. Mirror source directory structure.
+    Scans all subdirectories at once, so the first request
+    may be very slow depending on the number of images found"""
     os.chdir('/srv/AutoGalleryIndex')
+    
     if not os.path.exists(thumb_dir):
         os.mkdir(thumb_dir)
-    image_types = ('.png', '.jpeg', '.jpg', '.bmp', '.tiff', '.tff')
+    image_types = ('.png', '.jpeg', '.jpg', '.bmp', '.tiff', '.gif')
     for file_name in os.listdir(img_dir):
         abs_path = '%s/%s' % (img_dir, file_name)
         
         if '._thumbnails' == file_name:
+            # Don't infinitely recurse. This kills the server
             continue
         
         if os.path.isdir(abs_path):
@@ -45,36 +51,46 @@ def gallery(subfolder):
     env_vars['gallery_root'] = flask.request.script_root
 
     env_vars['current_directory'] = DOCROOT + request_root
-    env_vars['autogalleryindex_version'] = '0.1.0'
+    # Version is arbitrarily incremented to create the illusion of progress
+    env_vars['autogalleryindex_version'] = '0.4.0'
     
     env_vars['request_root'] = request_root
     env_vars['request_parent'] = '/'.join(request_root.split('/')[:-1])
     env_vars['subfolder'] = subfolder if (subfolder.endswith('/') or not subfolder) else subfolder + '/'
 
     # Symlink static files to make them accessible when apache is aliased over the actual directory
+    # Creates directory ./<DOCROOT>._static next to ./<DOCROOT>
+    # ./<DOCROOT>._static will be accessible via apache's normal autoindex unless explicity denied
+    # in vhost configuration
     symlink_src = DOCROOT + env_vars['gallery_root'] + '/'
     symlink_dest = DOCROOT + env_vars['gallery_root'] + '._static'
     if not os.path.exists(symlink_dest):
         os.symlink(symlink_src, symlink_dest)
     
-    # Generate thumbnailails for image files
+    # Generate thumbnailails for ALL image files in directory
     if not os.path.exists(symlink_dest + '/._thumbnails'):
         os.mkdir(symlink_dest + '/._thumbnails')
     thumbnails(symlink_dest, symlink_dest + '/._thumbnails')
 
     items = os.listdir(env_vars['current_directory'])
     env_vars['dir_contents'] = []
+    image_types = ('.png', '.jpeg', '.jpg', '.bmp', '.tiff', '.gif')
     for item in items:
         if item == '._thumbnails':
+            # Don't generate thumbnails for the thumbnail directory
             pass
         elif os.path.isdir(env_vars['current_directory'] + '/' + item):
             env_vars['dir_contents'].append((item, 'd'))  # Directory
+        elif os.path.splitext(item)[-1].lower() in image_types:
+            env_vars['dir_contents'].append((item, 'i'))  # Image
         else:
-            env_vars['dir_contents'].append((item, 'f'))  # File
+            env_vars['dir_contents'].append((item, 'f'))  # Generic file
+    # Sort directories first
     env_vars['dir_contents'].sort(key=lambda x: x[1] + x[0].lower())
     env_vars['dir_contents'].insert(0, ('back', 'b'))
     
     mobile_tags = ('Android', 'Windows Phone', 'iPod', 'iPhone')
+    # If it's a mobile browser, reduce the number of items displayed per row
     if any((tag in flask.request.headers.get('User-Agent') for tag in mobile_tags)):
         env_vars['items_per_row'] = 3
     else:
@@ -89,4 +105,6 @@ def rootdir():
 
 
 if __name__ == '__main__':
+    # This is basically just for checking syntax errors. The program should
+    # never be used without mod_wsgi and apache.
     app.run(host='0.0.0.0', port=9001, debug=True)
