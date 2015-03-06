@@ -51,8 +51,26 @@ def get_type(item):
     if 'image' in mime_type:
         return 'i'  # image
 
-    elif mime_type.split('/')[1] in ('zip', 'x-tar'):
+    elif any(tag in mime_type for tag in ('x-gtar', 'x-tar', 'zip', 'rar', 'x-7z')):
         return 'zip'  # Archive
+        
+    elif 'audio' in mime_type:
+        return 'audio'
+    
+    elif mime_type.split('/')[1] in ('x-iso9660-image', 'x-apple-diskimage'):
+        return 'cd-image'
+    
+    elif 'font' in mime_type:
+        return 'font'
+        
+    elif 'text/plain' in mime_type:
+        return 'text-plain'
+
+    elif 'msword' in mime_type or 'opendocument.text' in mime_type:
+        return 'office-doc'
+    
+    elif 'video' in mime_type:
+        return 'video'
 
     return 'binary'  # Generic file
 
