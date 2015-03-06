@@ -39,12 +39,26 @@ def thumbnails(img_dir, thumb_dir):
             thumb.save(thumb_dest)
 
 
+def get_type(item):
+    if not mimetypes.inited:
+        mimetypes.init()
+
+    try:
+        mime_type = mimetypes.types_map[os.path.splitext(item)[-1].lower()]
+    except KeyError:
+        mime_type = ''
+
+    if 'image' in mime_type:
+        return 'i'  # image
+
+    elif mime_type.split('/')[1] in ('zip', 'x-tar'):
+        return 'zip'  # Archive
+
+    return 'binary'  # Generic file
+
 @app.route('/<path:subfolder>')
 def gallery(subfolder):
     DOCROOT = '/var/www'
-    
-    if not mimetypes.inited:
-        mimetypes.init()
     
     env_vars = {}
         
@@ -82,18 +96,12 @@ def gallery(subfolder):
         if item == '._thumbnails':
             # Don't generate thumbnails for the thumbnail directory
             continue
-        try:
-            mime_type = mimetypes.types_map[os.path.splitext(item)[-1].lower()]
-        except KeyError:
-            mime_type = ''
         if os.path.isdir(env_vars['current_directory'] + '/' + item):
             env_vars['dir_contents'].append((item, 'd'))  # Directory
-        elif 'image' in mime_type:
-            env_vars['dir_contents'].append((item, 'i'))  # Image
-        elif mime_type.split('/')[1] in ('zip', 'x-tar'):
-            env_vars['dir_contents'].append((item, 'zip')) # Archive
-        else:
-            env_vars['dir_contents'].append((item, 'binary'))  # Generic file
+            continue
+    
+        env_vars['dir_contents'].append((item, get_type(item)))
+
     # Sort directories first
     env_vars['dir_contents'].sort(key=lambda x: '..' if x[1] == 'd' else x[0].lower())
     env_vars['dir_contents'].insert(0, ('back', 'b'))
