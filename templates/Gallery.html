@@ -20,18 +20,20 @@
                 <td>
                 {% if type == 'b' %}
                     <a href="{{ request_parent }}">
-                    <img src="{{ gallery_root }}/static/icons/folder_64.png" /><br />
+                    <img src="{{ gallery_root }}/static/icons/folder.png" /><br />
                     Back</a>
                 {% elif type == 'd' %}
                     <a href="{{ request_root }}/{{ item }}">
-                    <img src="{{ gallery_root }}/static/icons/folder_64.png" /><br />
+                    <img src="{{ gallery_root }}/static/icons/folder.png" /><br />
                     {{ item }}
                 {% elif type == 'i' %}
                     <a href="{{ gallery_root }}._static/{{ subfolder }}{{ item }}" target="_blank">
                     <img src="{{ gallery_root }}._static/._thumbnails/{{ subfolder }}{{ item }}"
                          height=100 width=178 />
-                {% elif type == 'f' %}
-                    
+                {% else %}
+                    <a href="{{ gallery_root }}._static/{{ subfolder}}{{ item}}" target="_blank">
+                    <img src="{{ gallery_root }}/static/icons/{{type}}.png" /><br />
+                    {{ item }}
                 {% endif %}
                 <!--{{ item }}-->
                 </a>

@@ -3,6 +3,7 @@
 import flask
 import os
 from PIL import Image, ImageFilter
+import mimetypes
 
 app = flask.Flask(__name__)
 
@@ -42,6 +43,9 @@ def thumbnails(img_dir, thumb_dir):
 def gallery(subfolder):
     DOCROOT = '/var/www'
     
+    if not mimetypes.inited:
+        mimetypes.init()
+    
     env_vars = {}
         
     request_root = '%s/%s' % (flask.request.script_root, subfolder)
@@ -74,19 +78,24 @@ def gallery(subfolder):
 
     items = os.listdir(env_vars['current_directory'])
     env_vars['dir_contents'] = []
-    image_types = ('.png', '.jpeg', '.jpg', '.bmp', '.tiff', '.gif')
     for item in items:
         if item == '._thumbnails':
             # Don't generate thumbnails for the thumbnail directory
-            pass
-        elif os.path.isdir(env_vars['current_directory'] + '/' + item):
+            continue
+        try:
+            mime_type = mimetypes.types_map[os.path.splitext(item)[-1].lower()]
+        except KeyError:
+            mime_type = ''
+        if os.path.isdir(env_vars['current_directory'] + '/' + item):
             env_vars['dir_contents'].append((item, 'd'))  # Directory
-        elif os.path.splitext(item)[-1].lower() in image_types:
+        elif 'image' in mime_type:
             env_vars['dir_contents'].append((item, 'i'))  # Image
+        elif mime_type.split('/')[1] in ('zip', 'x-tar'):
+            env_vars['dir_contents'].append((item, 'zip')) # Archive
         else:
-            env_vars['dir_contents'].append((item, 'f'))  # Generic file
+            env_vars['dir_contents'].append((item, 'binary'))  # Generic file
     # Sort directories first
-    env_vars['dir_contents'].sort(key=lambda x: x[1] + x[0].lower())
+    env_vars['dir_contents'].sort(key=lambda x: '..' if x[1] == 'd' else x[0].lower())
     env_vars['dir_contents'].insert(0, ('back', 'b'))
     
     mobile_tags = ('Android', 'Windows Phone', 'iPod', 'iPhone')
