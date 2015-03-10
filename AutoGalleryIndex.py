@@ -13,7 +13,6 @@ def thumbnails(img_dir, thumb_dir):
     thumb_dir. Mirror source directory structure.
     Scans all subdirectories at once, so the first request
     may be very slow depending on the number of images found"""
-    os.chdir('/srv/AutoGalleryIndex')
     
     if not os.path.exists(thumb_dir):
         os.mkdir(thumb_dir)
@@ -76,7 +75,7 @@ def get_type(item):
 
 @app.route('/<path:subfolder>')
 def gallery(subfolder):
-    DOCROOT = '/var/www'
+    DOCROOT = gallery.DOCROOT
     
     env_vars = {}
         
