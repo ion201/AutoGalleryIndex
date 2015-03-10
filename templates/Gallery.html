@@ -4,48 +4,47 @@
 <head>
     <title>Index of {{ current_directory }}</title>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=.5" />
     <link rel="stylesheet" type="text/css" href="{{ gallery_root }}/static/grid_layout.css" />
 </head>
 
 <body>
-    <div id="content">
-        <h1>Index of {{ request_root }}</h1>
+    <h1>Index of {{ request_root }}</h1>
 
-        <table> 
-            {% for item, type in dir_contents %}
-                {% if loop.index0 % items_per_row == 0 %}
-                    <tr>
-                {% endif %}
-                
-                <td>
-                {% if type == 'b' %}
-                    <a href="{{ request_parent }}">
-                    <img src="{{ gallery_root }}/static/icons/folder.png" /><br />
-                    Back</a>
-                {% elif type == 'd' %}
-                    <a href="{{ request_root }}/{{ item }}">
-                    <img src="{{ gallery_root }}/static/icons/folder.png" /><br />
-                    {{ item }}
-                {% elif type == 'i' %}
-                    <a href="{{ gallery_root }}._static/{{ subfolder }}{{ item }}" target="_blank">
-                    <img src="{{ gallery_root }}._static/._thumbnails/{{ subfolder }}{{ item }}"
-                         height=100 width=178 />
-                {% else %}
-                    <a href="{{ gallery_root }}._static/{{ subfolder}}{{ item}}" target="_blank">
-                    <img src="{{ gallery_root }}/static/icons/{{type}}.png" /><br />
-                    {{ item }}
-                {% endif %}
-                <!--{{ item }}-->
-                </a>
-                </td>
-                
-                {% if (loop.index) % items_per_row == 0 %}
-                    </tr>
-                {% endif %}
-                
-            {% endfor %}
-        </table>
-    </div>
+    <table> 
+        {% for item, type in dir_contents %}
+            {% if loop.index0 % items_per_row == 0 %}
+                <tr>
+            {% endif %}
+            
+            <td>
+            {% if type == 'b' %}
+                <a href="{{ request_parent }}">
+                <img src="{{ gallery_root }}/static/icons/folder.png" /><br />
+                Back</a>
+            {% elif type == 'd' %}
+                <a href="{{ request_root }}/{{ item }}">
+                <img src="{{ gallery_root }}/static/icons/folder.png" /><br />
+                {{ item }}
+            {% elif type == 'i' %}
+                <a href="{{ gallery_root }}._static/{{ subfolder }}{{ item }}" target="_blank">
+                <img src="{{ gallery_root }}._static/._thumbnails/{{ subfolder }}{{ item }}"
+                     height=100 width=178 />
+            {% else %}
+                <a href="{{ gallery_root }}._static/{{ subfolder}}{{ item}}" target="_blank">
+                <img src="{{ gallery_root }}/static/icons/{{type}}.png" /><br />
+                {{ item }}
+            {% endif %}
+            <!--{{ item }}-->
+            </a>
+            </td>
+            
+            {% if (loop.index) % items_per_row == 0 %}
+                </tr>
+            {% endif %}
+            
+        {% endfor %}
+    </table>
     
     <address>AutoGalleryIndex/{{ autogalleryindex_version }}</address>
 </body>
