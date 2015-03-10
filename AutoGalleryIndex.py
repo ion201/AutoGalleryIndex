@@ -20,8 +20,8 @@ def thumbnails(img_dir, thumb_dir):
     for file_name in os.listdir(img_dir):
         abs_path = '%s/%s' % (img_dir, file_name)
         
-        if '._thumbnails' == file_name:
-            # Don't infinitely recurse. This kills the server
+        if file_name.startswith('.'):
+            # Don't scan hidden files (This includes the thumbnail dir)
             continue
         
         if os.path.isdir(abs_path):
@@ -110,8 +110,8 @@ def gallery(subfolder):
     items = os.listdir(env_vars['current_directory'])
     env_vars['dir_contents'] = []
     for item in items:
-        if item == '._thumbnails':
-            # Don't generate thumbnails for the thumbnail directory
+        if item.startswith('.'):
+            # Don't mess with hidden files
             continue
         if os.path.isdir(env_vars['current_directory'] + '/' + item):
             env_vars['dir_contents'].append((item, 'd'))  # Directory
