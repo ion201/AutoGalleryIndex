@@ -1,12 +1,12 @@
 # AutoGalleryIndex
 
-mod_wsgi application designed to act similar to apache's autoindex but display thumbnail images. Primarily for viewing directories of images.
+mod_wsgi application designed to act similar to apache's autoindex but display thumbnail images. Primarily for viewing directories of images. Demo page: http://cloud.natesimon.me/GalleryDemo/
 
 Dependencies:
 
-`sudo apt-get install apache2 libapache2-mod-wsgi-py3 libjpeg-dev libtiff5-dev libpng12-dev`
+`sudo apt-get install apache2 python3 libapache2-mod-wsgi-py3 libjpeg-dev libtiff5-dev libpng12-dev`
 
-`sudo pip3 install Pillow`
+`sudo pip3 install Pillow flask`
 
 Steps to set up:
 
