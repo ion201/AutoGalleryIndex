@@ -41,13 +41,16 @@ def thumbnails(img_dir, thumb_dir):
 def get_type(item):
     if not mimetypes.inited:
         mimetypes.init()
+    
+    if item.endswith('.tar.gz'):
+        item += '.tgz'  # Annoying anomaly
 
     try:
         mime_type = mimetypes.types_map[os.path.splitext(item)[-1].lower()]
     except KeyError:
         mime_type = ''
 
-    if 'image' in mime_type:
+    if mime_type.startswith('image'):
         return 'i'  # image
 
     elif any(tag in mime_type for tag in ('x-gtar', 'x-tar', 'zip', 'rar', 'x-7z')):
@@ -56,20 +59,35 @@ def get_type(item):
     elif 'audio' in mime_type:
         return 'audio'
     
-    elif mime_type.split('/')[1] in ('x-iso9660-image', 'x-apple-diskimage'):
+    elif any(tag in mime_type for tag in ('iso9660-image', 'diskimage')):
         return 'cd-image'
     
     elif 'font' in mime_type:
         return 'font'
-        
-    elif 'text/plain' in mime_type:
-        return 'text-plain'
 
-    elif 'msword' in mime_type or 'opendocument.text' in mime_type:
+    elif any(tag in mime_type for tag in ('msword', 'wordprocessingml.document', 'opendocument.text')):
         return 'office-doc'
+    
+    elif any(tag in mime_type for tag in ('powerpoint', 'presentation')):
+        return 'office-present'
+    
+    elif any(tag in mime_type for tag in ('spreadsheet', 'excel', 'text/csv')):
+        return 'office-spreadsheet'
+    
+    elif 'pdf' in mime_type:
+        return 'pdf'
+    
+    elif 'python' in mime_type:
+        return 'text-python'
+    
+    elif 'x-sh' in mime_type:
+        return 'text-sh'
     
     elif 'video' in mime_type:
         return 'video'
+        
+    elif 'text' in mime_type:
+        return 'text-plain'
 
     return 'binary'  # Generic file
 
