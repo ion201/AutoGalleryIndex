@@ -29,10 +29,10 @@
             {% elif type == 'i' %}
                 <a href="{{ gallery_root }}._static/{{ subfolder }}{{ item }}" target="_blank">
                 <img src="{{ gallery_root }}._static/._thumbnails/{{ subfolder }}{{ item }}"
-                     height=100 width=178 />
+                     height=100 width=178" />
             {% else %}
-                <a href="{{ gallery_root }}._static/{{ subfolder}}{{ item}}" target="_blank">
-                <img src="{{ gallery_root }}/static/icons/{{type}}.png" /><br />
+                <a href="{{ gallery_root }}._static/{{ subfolder }}{{ item}}" target="_blank">
+                <img src="{{ gallery_root }}/static/icons/{{ type }}.png" /><br />
                 {{ item }}
             {% endif %}
             <!--{{ item }}-->

@@ -34,8 +34,13 @@ def thumbnails(img_dir, thumb_dir):
         
         thumb_dest = '%s/%s' % (thumb_dir, file_name)
         if not os.path.exists(thumb_dest):
-            thumb = Image.open(abs_path).resize((178, 100), Image.ANTIALIAS).filter(ImageFilter.DETAIL)
-            thumb.save(thumb_dest)
+            try:
+                thumb = Image.open(abs_path).resize((178, 100), Image.ANTIALIAS).filter(ImageFilter.DETAIL)
+                thumb.save(thumb_dest)
+            except Exception as e:
+                # File could not be identified (probably). It's most likely not an image
+                # This file will be given a generic icon when 
+                pass
 
 
 def get_type(item):
@@ -135,7 +140,11 @@ def gallery(subfolder):
             env_vars['dir_contents'].append((item, 'd'))  # Directory
             continue
     
-        env_vars['dir_contents'].append((item, get_type(item)))
+        file_type = get_type(item)
+        if file_type == 'i':
+            if not os.path.exists('%s/._thumbnails/%s%s' % (symlink_dest, env_vars['subfolder'], item)):
+                file_type = 'image'
+        env_vars['dir_contents'].append((item, file_type))
 
     # Sort directories first
     env_vars['dir_contents'].sort(key=lambda x: '..' if x[1] == 'd' else x[0].lower())
