@@ -113,7 +113,7 @@ def gallery(subfolder):
     env_vars['autogalleryindex_version'] = '0.4.0'
     
     env_vars['request_root'] = request_root
-    env_vars['request_parent'] = '/'.join(request_root.split('/')[:-1])
+    env_vars['request_parent'] = '/' + '/'.join(list(filter(None, request_root.split('/')))[:-1])
     env_vars['subfolder'] = subfolder if (subfolder.endswith('/') or not subfolder) else subfolder + '/'
 
     # Symlink static files to make them accessible when apache is aliased over the actual directory
@@ -148,7 +148,9 @@ def gallery(subfolder):
 
     # Sort directories first
     env_vars['dir_contents'].sort(key=lambda x: '..' if x[1] == 'd' else x[0].lower())
-    env_vars['dir_contents'].insert(0, ('back', 'b'))
+    
+    if env_vars['request_root'] != env_vars['request_parent']:  # == '/'
+        env_vars['dir_contents'].insert(0, ('back', 'b'))
     
     mobile_tags = ('Android', 'Windows Phone', 'iPod', 'iPhone')
     # If it's a mobile browser, reduce the number of items displayed per row
