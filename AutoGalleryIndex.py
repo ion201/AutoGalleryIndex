@@ -14,6 +14,9 @@ def thumbnails(img_dir, thumb_dir):
     Scans all subdirectories at once, so the first request
     may be very slow depending on the number of images found"""
     
+    MAX_WIDTH = 178
+    MAX_HEIGHT = 100
+    
     if not os.path.exists(thumb_dir):
         os.mkdir(thumb_dir)
     image_types = ('.png', '.jpeg', '.jpg', '.bmp', '.tiff', '.gif')
@@ -35,7 +38,15 @@ def thumbnails(img_dir, thumb_dir):
         thumb_dest = '%s/%s' % (thumb_dir, file_name)
         if not os.path.exists(thumb_dest):
             try:
-                thumb = Image.open(abs_path).resize((178, 100), Image.ANTIALIAS).filter(ImageFilter.DETAIL)
+                thumb = Image.open(abs_path)
+                aspect_ratio = thumb.size[0] / thumb.size[1]
+                if MAX_WIDTH / aspect_ratio > MAX_HEIGHT:
+                    height = MAX_HEIGHT
+                    width = int(MAX_HEIGHT * aspect_ratio)
+                else:
+                    width = MAX_WIDTH
+                    height = int(MAX_WIDTH / aspect_ratio)
+                thumb = thumb.resize((width, height), Image.ANTIALIAS).filter(ImageFilter.DETAIL)
                 thumb.save(thumb_dest)
             except Exception as e:
                 # File could not be identified (probably). It's most likely not an image
