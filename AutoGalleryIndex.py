@@ -181,4 +181,5 @@ def rootdir():
 if __name__ == '__main__':
     # This is basically just for checking syntax errors. The program should
     # never be used without mod_wsgi and apache.
+    gallery.DOCROOT = '/var/www/html/GalleryDemo'
     app.run(host='0.0.0.0', port=9001, debug=True)
