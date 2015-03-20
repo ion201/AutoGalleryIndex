@@ -4,6 +4,8 @@ import flask
 import os
 from PIL import Image, ImageFilter
 import mimetypes
+import time
+import threading
 
 app = flask.Flask(__name__)
 
@@ -103,7 +105,6 @@ def get_type(item):
     return 'binary'  # Generic file
 
 
-@app.before_first_request
 def run_thumbnail_gen():
     # Symlink static files to make them accessible when apache is aliased over the actual directory
     # Creates directory ./<DOCROOT>._static next to ./<DOCROOT>
@@ -120,6 +121,18 @@ def run_thumbnail_gen():
         os.mkdir(symlink_dest + '/._thumbnails')
         
     thumbnails(symlink_dest, symlink_dest + '/._thumbnails')
+
+
+def lib_maintainence():
+    while True:
+        # Scan for library changes every 5 minutes
+        run_thumbnail_gen()
+        time.sleep(600)
+
+
+@app.before_first_request
+def maintainence_launcher():
+    threading.Thread(target=lib_maintainence).start()
 
 
 @app.route('/<path:subfolder>')
@@ -172,6 +185,12 @@ def gallery(subfolder):
         env_vars['items_per_row'] = 5
    
     return flask.render_template('Gallery.html', **env_vars)
+
+
+@app.route('/makethumbs/')
+def makethumbs():
+    run_thumbnail_gen()
+    return flask.redirect('/')
 
 
 @app.route('/')
