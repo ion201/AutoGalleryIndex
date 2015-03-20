@@ -102,6 +102,26 @@ def get_type(item):
 
     return 'binary'  # Generic file
 
+
+@app.before_first_request
+def run_thumbnail_gen():
+    # Symlink static files to make them accessible when apache is aliased over the actual directory
+    # Creates directory ./<DOCROOT>._static next to ./<DOCROOT>
+    # ./<DOCROOT>._static will be accessible via apache's normal autoindex unless explicity denied
+    # in vhost configuration
+    DOCROOT = gallery.DOCROOT
+    symlink_src = DOCROOT + flask.request.script_root + '/'
+    symlink_dest = DOCROOT + flask.request.script_root + '._static'
+    if not os.path.exists(symlink_dest):
+        os.symlink(symlink_src, symlink_dest)
+    
+    # Generate thumbnailails for ALL image files in directory
+    if not os.path.exists(symlink_dest + '/._thumbnails'):
+        os.mkdir(symlink_dest + '/._thumbnails')
+        
+    thumbnails(symlink_dest, symlink_dest + '/._thumbnails')
+
+
 @app.route('/<path:subfolder>')
 def gallery(subfolder):
     DOCROOT = gallery.DOCROOT
@@ -122,20 +142,6 @@ def gallery(subfolder):
     env_vars['request_parent'] = '/'.join(request_root.split('/')[:-1])
     env_vars['subfolder'] = subfolder if (subfolder.endswith('/') or not subfolder) else subfolder + '/'
 
-    # Symlink static files to make them accessible when apache is aliased over the actual directory
-    # Creates directory ./<DOCROOT>._static next to ./<DOCROOT>
-    # ./<DOCROOT>._static will be accessible via apache's normal autoindex unless explicity denied
-    # in vhost configuration
-    symlink_src = DOCROOT + env_vars['gallery_root'] + '/'
-    symlink_dest = DOCROOT + env_vars['gallery_root'] + '._static'
-    if not os.path.exists(symlink_dest):
-        os.symlink(symlink_src, symlink_dest)
-    
-    # Generate thumbnailails for ALL image files in directory
-    if not os.path.exists(symlink_dest + '/._thumbnails'):
-        os.mkdir(symlink_dest + '/._thumbnails')
-    thumbnails(symlink_dest, symlink_dest + '/._thumbnails')
-
     items = os.listdir(env_vars['current_directory'])
     env_vars['dir_contents'] = []
     for item in items:
@@ -148,7 +154,9 @@ def gallery(subfolder):
     
         file_type = get_type(item)
         if file_type == 'i':
-            if not os.path.exists('%s/._thumbnails/%s%s' % (symlink_dest, env_vars['subfolder'], item)):
+            if not os.path.exists('%s/._thumbnails/%s%s' % (
+                                   DOCROOT + env_vars['gallery_root'] + '._static',
+                                   env_vars['subfolder'], item)):
                 file_type = 'image'
         env_vars['dir_contents'].append((item, file_type))
 
