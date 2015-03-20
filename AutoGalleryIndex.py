@@ -17,7 +17,13 @@ def thumbnails(img_dir, thumb_dir):
     if not os.path.exists(thumb_dir):
         os.mkdir(thumb_dir)
     image_types = ('.png', '.jpeg', '.jpg', '.bmp', '.tiff', '.gif')
-    for file_name in os.listdir(img_dir):
+    
+    try:
+        dir_contents = os.listdir(img_dir)
+    except Exception as e:
+        return
+    
+    for file_name in dir_contents:
         abs_path = '%s/%s' % (img_dir, file_name)
         
         if file_name.startswith('.'):
