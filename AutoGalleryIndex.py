@@ -116,34 +116,43 @@ def get_type(item):
     return 'binary'  # Generic file
 
 
-def run_thumbnail_gen():
+def run_thumbnail_gen(script_root=None):
     # Symlink static files to make them accessible when apache is aliased over the actual directory
     # Creates directory ./<DOCROOT>._static next to ./<DOCROOT>
     # ./<DOCROOT>._static will be accessible via apache's normal autoindex unless explicity denied
     # in vhost configuration
+    
+    if not script_root:
+        script_root = flask.request.script_root
+    
     DOCROOT = gallery.DOCROOT
-    symlink_src = DOCROOT + flask.request.script_root + '/'
-    symlink_dest = DOCROOT + flask.request.script_root + '._static'
+    symlink_src = DOCROOT + script_root + '/'
+    symlink_dest = DOCROOT + script_root + '._static'
     if not os.path.exists(symlink_dest):
         os.symlink(symlink_src, symlink_dest)
     
     # Generate thumbnailails for ALL image files in directory
     if not os.path.exists(symlink_dest + '/._thumbnails'):
         os.mkdir(symlink_dest + '/._thumbnails')
-        
+
     thumbnails(symlink_dest, symlink_dest + '/._thumbnails')
 
 
-def lib_maintainence():
+def lib_maintainence(script_root):
+    tmp_file = '/tmp/galleryindex'
     while True:
         # Scan for library changes every 5 minutes
-        run_thumbnail_gen()
+        with open(tmp_file, 'w') as f:
+            f.write('1')
+        run_thumbnail_gen(script_root)
+        with open(tmp_file, 'w') as f:
+            f.write('0')
         time.sleep(600)
 
 
 @app.before_first_request
 def maintainence_launcher():
-    threading.Thread(target=lib_maintainence).start()
+    threading.Thread(target=lib_maintainence, args=(flask.request.script_root,)).start()
 
 
 @app.route('/<path:subfolder>')
@@ -200,10 +209,11 @@ def gallery(subfolder):
     return flask.render_template('Gallery.html', **env_vars)
 
 
-@app.route('/makethumbs/')
-def makethumbs():
-    run_thumbnail_gen()
-    return flask.redirect('/')
+@app.route('/getthumbgenstatus/')
+def getthumbgenstatus():
+    with open('/tmp/galleryindex', 'r') as f:
+        status = f.read()
+    return status
 
 
 @app.route('/')
