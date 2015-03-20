@@ -16,6 +16,9 @@ def thumbnails(img_dir, thumb_dir):
     Scans all subdirectories at once, so the first request
     may be very slow depending on the number of images found"""
     
+    MAX_WIDTH = 178
+    MAX_HEIGHT = 100
+    
     if not os.path.exists(thumb_dir):
         os.mkdir(thumb_dir)
     image_types = ('.png', '.jpeg', '.jpg', '.bmp', '.tiff', '.gif')
@@ -43,7 +46,15 @@ def thumbnails(img_dir, thumb_dir):
         thumb_dest = '%s/%s' % (thumb_dir, file_name)
         if not os.path.exists(thumb_dest):
             try:
-                thumb = Image.open(abs_path).resize((178, 100), Image.ANTIALIAS).filter(ImageFilter.DETAIL)
+                thumb = Image.open(abs_path)
+                aspect_ratio = thumb.size[0] / thumb.size[1]
+                if MAX_WIDTH / aspect_ratio > MAX_HEIGHT:
+                    height = MAX_HEIGHT
+                    width = int(MAX_HEIGHT * aspect_ratio)
+                else:
+                    width = MAX_WIDTH
+                    height = int(MAX_WIDTH / aspect_ratio)
+                thumb = thumb.resize((width, height), Image.ANTIALIAS).filter(ImageFilter.DETAIL)
                 thumb.save(thumb_dest)
             except Exception as e:
                 # File could not be identified (probably). It's most likely not an image
@@ -152,7 +163,7 @@ def gallery(subfolder):
     env_vars['autogalleryindex_version'] = '0.4.0'
     
     env_vars['request_root'] = request_root
-    env_vars['request_parent'] = '/'.join(request_root.split('/')[:-1])
+    env_vars['request_parent'] = '/' + '/'.join(list(filter(None, request_root.split('/')))[:-1])
     env_vars['subfolder'] = subfolder if (subfolder.endswith('/') or not subfolder) else subfolder + '/'
 
     items = os.listdir(env_vars['current_directory'])
@@ -175,7 +186,9 @@ def gallery(subfolder):
 
     # Sort directories first
     env_vars['dir_contents'].sort(key=lambda x: '..' if x[1] == 'd' else x[0].lower())
-    env_vars['dir_contents'].insert(0, ('back', 'b'))
+    
+    if env_vars['request_root'] != env_vars['request_parent']:  # == '/'
+        env_vars['dir_contents'].insert(0, ('back', 'b'))
     
     mobile_tags = ('Android', 'Windows Phone', 'iPod', 'iPhone')
     # If it's a mobile browser, reduce the number of items displayed per row
@@ -201,4 +214,5 @@ def rootdir():
 if __name__ == '__main__':
     # This is basically just for checking syntax errors. The program should
     # never be used without mod_wsgi and apache.
+    gallery.DOCROOT = '/var/www/html/GalleryDemo'
     app.run(host='0.0.0.0', port=9001, debug=True)
