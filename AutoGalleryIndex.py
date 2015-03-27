@@ -169,7 +169,7 @@ def gallery(subfolder):
 
     env_vars['current_directory'] = DOCROOT + request_root
     # Version is arbitrarily incremented to create the illusion of progress
-    env_vars['autogalleryindex_version'] = '0.4.0'
+    env_vars['autogalleryindex_version'] = '0.5.1'
     
     env_vars['request_root'] = request_root
     env_vars['request_parent'] = '/' + '/'.join(list(filter(None, request_root.split('/')))[:-1])
