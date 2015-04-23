@@ -6,15 +6,18 @@ from PIL import Image, ImageFilter
 import mimetypes
 import time
 import threading
+import subprocess
 
 app = flask.Flask(__name__)
 
 
-def thumbnails(img_dir, thumb_dir):
+def thumbnails(img_dir, thumb_dir, files_remaining, time_prev=0):
     """Generate thumbnails recursively from img_dir and save images to
     thumb_dir. Mirror source directory structure.
     Scans all subdirectories at once, so the first request
     may be very slow depending on the number of images found"""
+    
+    tmp_file = '/tmp/galleryindex'
     
     MAX_WIDTH = 178
     MAX_HEIGHT = 100
@@ -29,20 +32,26 @@ def thumbnails(img_dir, thumb_dir):
         return
     
     for file_name in dir_contents:
+        files_remaining -= 1
+        if time.time() - time_prev > .05:
+            with open(tmp_file, 'w') as f:
+                f.write(str(files_remaining))
+                time_prev = time.time()
+
         abs_path = '%s/%s' % (img_dir, file_name)
-        
+
         if file_name.startswith('.'):
             # Don't scan hidden files (This includes the thumbnail dir)
             continue
-        
+
         if os.path.isdir(abs_path):
-            thumbnails(abs_path, '%s/%s' % (thumb_dir, file_name))
+            thumbnails(abs_path, '%s/%s' % (thumb_dir, file_name), files_remaining, time_prev)
             continue
-            
+
         # Super inteligent file type detection
         if os.path.splitext(file_name)[-1].lower() not in image_types:
             continue  # Don't thumbnail non images (duh)
-        
+
         thumb_dest = '%s/%s' % (thumb_dir, file_name)
         if not os.path.exists(thumb_dest):
             try:
@@ -116,7 +125,7 @@ def get_type(item):
     return 'binary'  # Generic file
 
 
-def run_thumbnail_gen(script_root=None):
+def run_thumbnail_gen(script_root=None, total_files=None):
     # Symlink static files to make them accessible when apache is aliased over the actual directory
     # Creates directory ./<DOCROOT>._static next to ./<DOCROOT>
     # ./<DOCROOT>._static will be accessible via apache's normal autoindex unless explicity denied
@@ -135,18 +144,16 @@ def run_thumbnail_gen(script_root=None):
     if not os.path.exists(symlink_dest + '/._thumbnails'):
         os.mkdir(symlink_dest + '/._thumbnails')
 
-    thumbnails(symlink_dest, symlink_dest + '/._thumbnails')
+    thumbnails(symlink_dest, symlink_dest + '/._thumbnails', total_files)
 
 
 def lib_maintainence(script_root):
-    tmp_file = '/tmp/galleryindex'
     while True:
+        # This beautiful command *quickly* recursively counts the number of objects in the directory
+        total_files = int(subprocess.check_output('ls -lR %s | wc -l' % (gallery.DOCROOT + script_root),
+                          shell=True).decode('utf-8'))
+        run_thumbnail_gen(script_root, total_files)
         # Scan for library changes every 5 minutes
-        with open(tmp_file, 'w') as f:
-            f.write('1')
-        run_thumbnail_gen(script_root)
-        with open(tmp_file, 'w') as f:
-            f.write('0')
         time.sleep(600)
 
 
