@@ -18,19 +18,19 @@
             //Currently returns 1 if active; 0 if not
             var progress = $.ajax({ url: '{{ gallery_root }}/getthumbgenstatus/',
                         datatype: 'text', async: false}).responseText;
-            if (progress == "0"){  //Done
-                if (! this.first_run){
+            if (progress == "0"){  // Done
+                if (! this.progress_first_run){
                     document.getElementById("thumb_progress").innerHTML = "Thumbnails " +
                     "all generated. <a href='.'>Refresh</a> the page " +
                     "to see changes";
                 }
             } else{
-                document.getElementById("thumb_progress").innerHTML = "Thumbnails are currently be generated...";
-                this.first_run = false;
-                setTimeout(getThumbProgress, 3000);
+                document.getElementById("thumb_progress").innerHTML = "Files queued to parse: " + progress;
+                this.progress_first_run = false;
+                setTimeout(getThumbProgress, 100);
             }
         }
-        this.first_run = true;
+        this.progress_first_run = true;
         getThumbProgress();
     </script>
 
