@@ -145,6 +145,8 @@ def run_thumbnail_gen(script_root=None, total_files=None):
         os.mkdir(symlink_dest + '/._thumbnails')
 
     thumbnails(symlink_dest, symlink_dest + '/._thumbnails', total_files)
+    with open('/tmp/galleryindex', 'w') as f:
+        f.write('0')
 
 
 def lib_maintainence(script_root):
