@@ -1,4 +1,5 @@
 Apache sample setup using mod_wsgi
+----------------------------------
 
 WSGIDaemonProcess AutoGalleryIndexPGroup user=nate group=nate threads=5
 WSGIScriptAlias /filesnav/Sync/Photos /srv/AutoGalleryIndex/AutoGalleryIndex.wsgi
@@ -7,18 +8,7 @@ WSGIScriptAlias /filesnav/Sync/Photos /srv/AutoGalleryIndex/AutoGalleryIndex.wsg
 
 <Directory /srv/AutoGalleryIndex/>
     Options -Indexes
-    
     WSGIProcessGroup AutoGalleryIndexPGroup
     WSGIApplicationGroup %{GLOBAL}
-    
-    (the rest is optional)
-    WSGIPassAuthorization On
-
-    AuthType Basic
-    AuthName "Restricted Files"
-    AuthUserFile /etc/apache2/users
-    AuthGroupFile /etc/apache2/groups
-    Require group Admins
-
 </Directory>
 
