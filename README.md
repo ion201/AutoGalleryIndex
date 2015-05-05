@@ -6,7 +6,7 @@ Dependencies:
 
 `sudo apt-get install apache2 python3 libapache2-mod-wsgi-py3 libjpeg-dev libtiff5-dev libpng12-dev`
 
-`sudo pip3 install Pillow flask`
+`sudo pip3 install -r requirements.txt`
 
 Steps to set up:
 
