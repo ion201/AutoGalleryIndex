@@ -231,8 +231,8 @@ def gallery(subfolder):
                 file_type = 'image'
         env_vars['dir_contents'].append((item, file_type))
 
-    # Sort directories first
-    env_vars['dir_contents'].sort(key=lambda x: '..' if x[1] == 'd' else x[0].lower())
+    # Sort directories first, then sort by character
+    env_vars['dir_contents'].sort(key=lambda x: '..%s' % x[0].lower() if x[1] == 'd' else x[0].lower())
     
     if env_vars['request_root'] != env_vars['request_parent']:  # == '/'
         env_vars['dir_contents'].insert(0, ('back', 'b'))
