@@ -28,7 +28,7 @@ def thumbnails(img_dir, thumb_dir, files_remaining, time_prev=0):
     Scans all subdirectories at once, so the first request
     may be very slow depending on the number of images found"""
     
-    tmp_file = '/tmp/galleryindex'
+    tmp_file = '/tmp/galleryindexcount'
     
     MAX_WIDTH = 178
     MAX_HEIGHT = 100
@@ -41,10 +41,10 @@ def thumbnails(img_dir, thumb_dir, files_remaining, time_prev=0):
         return
     
     for file_name in dir_contents:
-        files_remaining -= 1
+        files_remaining[0] -= 1
         if time.time() - time_prev > .05:
             with open(tmp_file, 'w') as f:
-                f.write(str(files_remaining))
+                f.write(str(files_remaining[0]))
                 time_prev = time.time()
 
         abs_path = '%s/%s' % (img_dir, file_name)
@@ -52,6 +52,22 @@ def thumbnails(img_dir, thumb_dir, files_remaining, time_prev=0):
         if file_name.startswith('.'):
             # Don't scan hidden files (This includes the thumbnail dir)
             continue
+        
+        if os.path.islink(abs_path):
+            # Don't scan recursive symbolic links
+            link_dest = os.path.realpath(abs_path)
+
+            is_recursive = False
+
+            next = os.path.split(abs_path)[0]
+            while next != '/':
+                if os.path.realpath(next) == link_dest:
+                    is_recursive = True
+                    break
+                next = os.path.split(next)[0]
+            
+            if is_recursive:
+                continue
 
         if os.path.isdir(abs_path):
             thumbnails(abs_path, '%s/%s' % (thumb_dir, file_name), files_remaining, time_prev)
@@ -87,7 +103,7 @@ def get_type(item):
     if not mimetypes.inited:
         mimetypes.init()
     
-    if item.endswith('.tar.gz'):
+    if item.endswith('.gz'):
         item += '.tgz'  # Annoying anomaly
 
     try:
@@ -157,15 +173,16 @@ def run_thumbnail_gen(script_root=None, total_files=None):
         os.mkdir(symlink_dest + '/._thumbnails')
 
     thumbnails(symlink_dest, symlink_dest + '/._thumbnails', total_files)
-    with open('/tmp/galleryindex', 'w') as f:
+    with open('/tmp/galleryindexcount', 'w') as f:
         f.write('0')
 
 
 def lib_maintainence(script_root):
     while True:
         # This beautiful command *quickly* recursively counts the number of objects in the directory
-        total_files = int(subprocess.check_output('find %s/* | wc -l' % (gallery.DOCROOT + script_root),
-                          shell=True).decode('utf-8'))
+        # It's a list so that it can be passed by reference
+        total_files = [int(subprocess.check_output('find %s/* | wc -l' % (gallery.DOCROOT + script_root),
+                          shell=True).decode('utf-8'))]
         run_thumbnail_gen(script_root, total_files)
         # Scan for library changes every 5 minutes
         time.sleep(600)
@@ -232,7 +249,7 @@ def gallery(subfolder):
 
 @app.route('/getthumbgenstatus/')
 def getthumbgenstatus():
-    with open('/tmp/galleryindex', 'r') as f:
+    with open('/tmp/galleryindexcount', 'r') as f:
         status = f.read()
     return status
 
