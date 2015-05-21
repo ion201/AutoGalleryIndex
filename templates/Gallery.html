@@ -27,7 +27,7 @@
             } else{
                 document.getElementById("thumb_progress").innerHTML = "Files queued to parse: " + progress;
                 this.progress_first_run = false;
-                setTimeout(getThumbProgress, 100);
+                setTimeout(getThumbProgress, 1000);
             }
         }
         this.progress_first_run = true;

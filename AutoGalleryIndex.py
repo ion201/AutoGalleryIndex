@@ -11,6 +11,17 @@ import subprocess
 app = flask.Flask(__name__)
 
 
+def createdir(directory):
+    #Create directory recursively
+    if os.path.exists(directory):
+        return
+    if directory.endswith('/'):
+        createdir(os.path.split(directory[:-1])[0])
+    else:
+        createdir(os.path.split(directory)[0])
+    os.mkdir(directory)
+
+
 def thumbnails(img_dir, thumb_dir, files_remaining, time_prev=0):
     """Generate thumbnails recursively from img_dir and save images to
     thumb_dir. Mirror source directory structure.
@@ -22,8 +33,6 @@ def thumbnails(img_dir, thumb_dir, files_remaining, time_prev=0):
     MAX_WIDTH = 178
     MAX_HEIGHT = 100
     
-    if not os.path.exists(thumb_dir):
-        os.mkdir(thumb_dir)
     image_types = ('.png', '.jpeg', '.jpg', '.bmp', '.tiff', '.gif')
     
     try:
@@ -64,6 +73,9 @@ def thumbnails(img_dir, thumb_dir, files_remaining, time_prev=0):
                     width = MAX_WIDTH
                     height = int(MAX_WIDTH / aspect_ratio)
                 thumb = thumb.resize((width, height), Image.ANTIALIAS).filter(ImageFilter.DETAIL)
+                if not os.path.exists(thumb_dir):
+                    # Create subdirectories only when needed
+                    createdir(thumb_dir)
                 thumb.save(thumb_dest)
             except Exception as e:
                 # File could not be identified (probably). It's most likely not an image
@@ -152,7 +164,7 @@ def run_thumbnail_gen(script_root=None, total_files=None):
 def lib_maintainence(script_root):
     while True:
         # This beautiful command *quickly* recursively counts the number of objects in the directory
-        total_files = int(subprocess.check_output('ls -lR %s | wc -l' % (gallery.DOCROOT + script_root),
+        total_files = int(subprocess.check_output('find %s/* | wc -l' % (gallery.DOCROOT + script_root),
                           shell=True).decode('utf-8'))
         run_thumbnail_gen(script_root, total_files)
         # Scan for library changes every 5 minutes
