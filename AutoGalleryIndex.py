@@ -219,19 +219,6 @@ def gallery(subfolder):
         if item.startswith('.'):
             # Don't mess with hidden files
             continue
-
-        # Break up long names to allow line wrapping
-        if any(len(part) >= 18 for part in item.split(' ')):
-            parts = item.replace('_', '_ ').replace('.', '. ').split(' ')
-            final_parts = ['']
-            for subpart in parts:
-                if len(final_parts[-1] + subpart) < 16:
-                    final_parts[-1] += subpart
-                else:
-                    final_parts.append(subpart)
-            item = ' '.join(final_parts)
-        
-
         if os.path.isdir(env_vars['current_directory'] + '/' + item):
             env_vars['dir_contents'].append((item, 'd'))  # Directory
             continue
