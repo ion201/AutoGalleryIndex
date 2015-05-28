@@ -12,7 +12,8 @@ app = flask.Flask(__name__)
 
 
 def createdir(directory):
-    #Create directory recursively
+    """Creates a directory recursively from the highest
+    existing directory"""
     if os.path.exists(directory):
         return
     if directory.endswith('/'):
@@ -27,19 +28,19 @@ def thumbnails(img_dir, thumb_dir, files_remaining, time_prev=0):
     thumb_dir. Mirror source directory structure.
     Scans all subdirectories at once, so the first request
     may be very slow depending on the number of images found"""
-    
+
     tmp_file = '/tmp/galleryindexcount'
-    
+
     MAX_WIDTH = 178
     MAX_HEIGHT = 100
-    
+
     image_types = ('.png', '.jpeg', '.jpg', '.bmp', '.tiff', '.gif')
-    
+
     try:
         dir_contents = os.listdir(img_dir)
     except Exception as e:
         return
-    
+
     for file_name in dir_contents:
         files_remaining[0] -= 1
         if time.time() - time_prev > .05:
@@ -52,7 +53,7 @@ def thumbnails(img_dir, thumb_dir, files_remaining, time_prev=0):
         if file_name.startswith('.'):
             # Don't scan hidden files (This includes the thumbnail dir)
             continue
-        
+
         if os.path.islink(abs_path):
             # Don't scan recursive symbolic links
             link_dest = os.path.realpath(abs_path)
@@ -65,7 +66,7 @@ def thumbnails(img_dir, thumb_dir, files_remaining, time_prev=0):
                     is_recursive = True
                     break
                 next = os.path.split(next)[0]
-            
+
             if is_recursive:
                 continue
 
@@ -95,14 +96,15 @@ def thumbnails(img_dir, thumb_dir, files_remaining, time_prev=0):
                 thumb.save(thumb_dest)
             except Exception as e:
                 # File could not be identified (probably). It's most likely not an image
-                # This file will be given a generic icon when 
+                # This file will be given a generic icon when
                 pass
 
 
 def get_type(item):
+    """Get simple text file type for a given file name"""
     if not mimetypes.inited:
         mimetypes.init()
-    
+
     if item.endswith('.gz'):
         item += '.tgz'  # Annoying anomaly
 
@@ -116,37 +118,37 @@ def get_type(item):
 
     elif any(tag in mime_type for tag in ('x-gtar', 'x-tar', 'zip', 'rar', 'x-7z')):
         return 'zip'  # Archive
-        
+
     elif 'audio' in mime_type:
         return 'audio'
-    
+
     elif any(tag in mime_type for tag in ('iso9660-image', 'diskimage')):
         return 'cd-image'
-    
+
     elif 'font' in mime_type:
         return 'font'
 
     elif any(tag in mime_type for tag in ('msword', 'wordprocessingml.document', 'opendocument.text')):
         return 'office-doc'
-    
+
     elif any(tag in mime_type for tag in ('powerpoint', 'presentation')):
         return 'office-present'
-    
+
     elif any(tag in mime_type for tag in ('spreadsheet', 'excel', 'text/csv')):
         return 'office-spreadsheet'
-    
+
     elif 'pdf' in mime_type:
         return 'pdf'
-    
+
     elif 'python' in mime_type:
         return 'text-python'
-    
+
     elif 'x-sh' in mime_type:
         return 'text-sh'
-    
+
     elif 'video' in mime_type:
         return 'video'
-        
+
     elif 'text' in mime_type:
         return 'text-plain'
 
@@ -154,20 +156,21 @@ def get_type(item):
 
 
 def run_thumbnail_gen(script_root=None, total_files=None):
+    """Initialize environment for generating thumbnails"""
     # Symlink static files to make them accessible when apache is aliased over the actual directory
     # Creates directory ./<DOCROOT>._static next to ./<DOCROOT>
     # ./<DOCROOT>._static will be accessible via apache's normal autoindex unless explicity denied
     # in vhost configuration
-    
+
     if not script_root:
         script_root = flask.request.script_root
-    
+
     DOCROOT = gallery.DOCROOT
     symlink_src = DOCROOT + script_root + '/'
     symlink_dest = DOCROOT + script_root + '._static'
     if not os.path.exists(symlink_dest):
         os.symlink(symlink_src, symlink_dest)
-    
+
     # Generate thumbnailails for ALL image files in directory
     if not os.path.exists(symlink_dest + '/._thumbnails'):
         os.mkdir(symlink_dest + '/._thumbnails')
@@ -179,13 +182,13 @@ def run_thumbnail_gen(script_root=None, total_files=None):
 
 def lib_maintainence(script_root):
     while True:
-        # This beautiful command *quickly* recursively counts the number of objects in the directory
-        # It's a list so that it can be passed by reference
+        # This command quickly counts the number of objects in the directory
+        # total_files is a list so that I can pass it by reference
         total_files = [int(subprocess.check_output('find %s/* | wc -l' % (gallery.DOCROOT + script_root),
                           shell=True).decode('utf-8'))]
         run_thumbnail_gen(script_root, total_files)
         # Scan for library changes every 5 minutes
-        time.sleep(600)
+        time.sleep(300)
 
 
 @app.before_first_request
@@ -196,19 +199,19 @@ def maintainence_launcher():
 @app.route('/<path:subfolder>')
 def gallery(subfolder):
     DOCROOT = gallery.DOCROOT
-    
+
     env_vars = {}
-        
+
     request_root = '%s/%s' % (flask.request.script_root, subfolder)
     if request_root.endswith('/'):
         request_root = request_root[:-1]
-    
+
     env_vars['gallery_root'] = flask.request.script_root
 
     env_vars['current_directory'] = DOCROOT + request_root
     # Version is arbitrarily incremented to create the illusion of progress
     env_vars['autogalleryindex_version'] = '0.5.1'
-    
+
     env_vars['request_root'] = request_root
     env_vars['request_parent'] = '/' + '/'.join(list(filter(None, request_root.split('/')))[:-1])
     env_vars['subfolder'] = subfolder if (subfolder.endswith('/') or not subfolder) else subfolder + '/'
@@ -222,7 +225,7 @@ def gallery(subfolder):
         if os.path.isdir(env_vars['current_directory'] + '/' + item):
             env_vars['dir_contents'].append((item, 'd'))  # Directory
             continue
-    
+
         file_type = get_type(item)
         if file_type == 'i':
             if not os.path.exists('%s/._thumbnails/%s%s' % (
@@ -233,17 +236,17 @@ def gallery(subfolder):
 
     # Sort directories first, then sort by character
     env_vars['dir_contents'].sort(key=lambda x: '..%s' % x[0].lower() if x[1] == 'd' else x[0].lower())
-    
+
     if env_vars['request_root'] != env_vars['request_parent']:  # == '/'
         env_vars['dir_contents'].insert(0, ('back', 'b'))
-    
+
     mobile_tags = ('Android', 'Windows Phone', 'iPod', 'iPhone')
     # If it's a mobile browser, reduce the number of items displayed per row
     if any((tag in flask.request.headers.get('User-Agent') for tag in mobile_tags)):
         env_vars['items_per_row'] = 3
     else:
         env_vars['items_per_row'] = 5
-   
+
     return flask.render_template('Gallery.html', **env_vars)
 
 
@@ -260,7 +263,6 @@ def rootdir():
 
 
 if __name__ == '__main__':
-    # This is basically just for checking syntax errors. The program should
-    # never be used without mod_wsgi and apache.
+    """For debugging purposes only"""
     gallery.DOCROOT = '/var/www/html/GalleryDemo'
     app.run(host='0.0.0.0', port=9001, debug=True)
