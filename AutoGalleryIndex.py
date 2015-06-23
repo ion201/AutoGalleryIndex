@@ -2,6 +2,7 @@
 
 import flask
 import os
+import stat
 from PIL import Image, ImageFilter
 import mimetypes
 import time
@@ -95,8 +96,9 @@ def thumbnails(img_dir, thumb_dir, files_remaining, time_prev=0):
                     createdir(thumb_dir)
                 thumb.save(thumb_dest)
             except Exception as e:
-                # File could not be identified (probably). It's most likely not an image
-                # This file will be given a generic icon when
+                # File is most likely either not an image or does
+                # not have read permissions
+                # This file will be given a generic image icon when displayed
                 pass
 
 
@@ -210,7 +212,7 @@ def gallery(subfolder):
 
     env_vars['current_directory'] = DOCROOT + request_root
     # Version is arbitrarily incremented to create the illusion of progress
-    env_vars['autogalleryindex_version'] = '0.5.1'
+    env_vars['autogalleryindex_version'] = '0.5.2'
 
     env_vars['request_root'] = request_root
     env_vars['request_parent'] = '/' + '/'.join(list(filter(None, request_root.split('/')))[:-1])
@@ -222,7 +224,11 @@ def gallery(subfolder):
         if item.startswith('.'):
             # Don't mess with hidden files
             continue
-        if os.path.isdir(env_vars['current_directory'] + '/' + item):
+        item_full_path = env_vars['current_directory'] + '/' + item
+        if not os.stat(item_full_path).st_mode & stat.S_IRWXO:
+            # Don't index files without read access
+            continue
+        if os.path.isdir(item_full_path):
             env_vars['dir_contents'].append((item, 'd'))  # Directory
             continue
 
@@ -264,5 +270,5 @@ def rootdir():
 
 if __name__ == '__main__':
     """For debugging purposes only"""
-    gallery.DOCROOT = '/var/www/html/GalleryDemo'
+    gallery.DOCROOT = '/var/www/html/'
     app.run(host='0.0.0.0', port=9001, debug=True)
