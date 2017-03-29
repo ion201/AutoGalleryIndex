@@ -1,274 +1,165 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 import flask
 import os
-import stat
 from PIL import Image, ImageFilter
-import mimetypes
 import time
-import threading
 import subprocess
 
+import FileMimetypes as mime
+
 app = flask.Flask(__name__)
+app.jinja_env.trim_blocks = True
+
+RELEASE_VERSION = '1.0.0'
+
+app.config['APPLICATION_NAME'] = 'AutoGalleryIndex'
+app.config['ROW_ITEMS_SHORT'] = 3
+app.config['ROW_ITEMS_LONG'] = 5
+app.config['EXCLUDE_HIDDEN_FILES'] = True
+app.config['MAX_LINE_CHARACTERS'] = 20
+app.config['MAX_LINES_PER_ENTRY'] = 3
+
+log_message = print
 
 
-def createdir(directory):
-    """Creates a directory recursively from the highest
-    existing directory"""
-    if os.path.exists(directory):
-        return
-    if directory.endswith('/'):
-        createdir(os.path.split(directory[:-1])[0])
-    else:
-        createdir(os.path.split(directory)[0])
-    os.mkdir(directory)
+def get_cache_location():
+    return os.path.join(app.config['CACHE_HOME'], app.config['APPLICATION_NAME'])
 
 
-def thumbnails(img_dir, thumb_dir, files_remaining, time_prev=0):
-    """Generate thumbnails recursively from img_dir and save images to
-    thumb_dir. Mirror source directory structure.
-    Scans all subdirectories at once, so the first request
-    may be very slow depending on the number of images found"""
+def is_mobile_request(request_headers):
+    mobile_tags = ('Android', 'Windows Phone', 'iPod', 'iPhone')
+    if any((tag in request_headers.get('User-Agent') for tag in mobile_tags)):
+        return True
+    return False
 
-    tmp_file = '/tmp/galleryindexcount'
 
-    MAX_WIDTH = 178
-    MAX_HEIGHT = 100
-
-    image_types = ('.png', '.jpeg', '.jpg', '.bmp', '.tiff', '.gif')
-
+def get_directory_contents(directory):
     try:
-        dir_contents = os.listdir(img_dir)
-    except Exception as e:
-        return
+        items = os.listdir(directory)
+        if app.config['EXCLUDE_HIDDEN_FILES']:
+            items = [i for i in items if not i.startswith('.')]
+    except PermissionError as e:
+        items = []
 
-    for file_name in dir_contents:
-        files_remaining[0] -= 1
-        if time.time() - time_prev > .05:
-            with open(tmp_file, 'w') as f:
-                f.write(str(files_remaining[0]))
-                time_prev = time.time()
-
-        abs_path = '%s/%s' % (img_dir, file_name)
-
-        if file_name.startswith('.'):
-            # Don't scan hidden files (This includes the thumbnail dir)
-            continue
-
-        if os.path.islink(abs_path):
-            # Don't scan recursive symbolic links
-            link_dest = os.path.realpath(abs_path)
-
-            is_recursive = False
-
-            next = os.path.split(abs_path)[0]
-            while next != '/':
-                if os.path.realpath(next) == link_dest:
-                    is_recursive = True
-                    break
-                next = os.path.split(next)[0]
-
-            if is_recursive:
-                continue
-
-        if os.path.isdir(abs_path):
-            thumbnails(abs_path, '%s/%s' % (thumb_dir, file_name), files_remaining, time_prev)
-            continue
-
-        # Super inteligent file type detection
-        if os.path.splitext(file_name)[-1].lower() not in image_types:
-            continue  # Don't thumbnail non images (duh)
-
-        thumb_dest = '%s/%s' % (thumb_dir, file_name)
-        if not os.path.exists(thumb_dest):
-            try:
-                thumb = Image.open(abs_path)
-                aspect_ratio = thumb.size[0] / thumb.size[1]
-                if MAX_WIDTH / aspect_ratio > MAX_HEIGHT:
-                    height = MAX_HEIGHT
-                    width = int(MAX_HEIGHT * aspect_ratio)
-                else:
-                    width = MAX_WIDTH
-                    height = int(MAX_WIDTH / aspect_ratio)
-                thumb = thumb.resize((width, height), Image.ANTIALIAS).filter(ImageFilter.DETAIL)
-                if not os.path.exists(thumb_dir):
-                    # Create subdirectories only when needed
-                    createdir(thumb_dir)
-                thumb.save(thumb_dest)
-            except Exception as e:
-                # File is most likely either not an image or does
-                # not have read permissions
-                # This file will be given a generic image icon when displayed
-                pass
+    return items
 
 
-def get_type(item):
-    """Get simple text file type for a given file name"""
-    if not mimetypes.inited:
-        mimetypes.init()
+def grants_read_permission(path):
+    """Only returns true if the specified file can be read"""
+    if os.access(path, os.R_OK):
+        return True
+    return False
 
-    if item.endswith('.gz'):
-        item += '.tgz'  # Annoying anomaly
-
-    try:
-        mime_type = mimetypes.types_map[os.path.splitext(item)[-1].lower()]
-    except KeyError:
-        mime_type = ''
-
-    if mime_type.startswith('image'):
-        return 'i'  # image
-
-    elif any(tag in mime_type for tag in ('x-gtar', 'x-tar', 'zip', 'rar', 'x-7z')):
-        return 'zip'  # Archive
-
-    elif 'audio' in mime_type:
-        return 'audio'
-
-    elif any(tag in mime_type for tag in ('iso9660-image', 'diskimage')):
-        return 'cd-image'
-
-    elif 'font' in mime_type:
-        return 'font'
-
-    elif any(tag in mime_type for tag in ('msword', 'wordprocessingml.document', 'opendocument.text')):
-        return 'office-doc'
-
-    elif any(tag in mime_type for tag in ('powerpoint', 'presentation')):
-        return 'office-present'
-
-    elif any(tag in mime_type for tag in ('spreadsheet', 'excel', 'text/csv')):
-        return 'office-spreadsheet'
-
-    elif 'pdf' in mime_type:
-        return 'pdf'
-
-    elif 'python' in mime_type:
-        return 'text-python'
-
-    elif 'x-sh' in mime_type:
-        return 'text-sh'
-
-    elif 'video' in mime_type:
-        return 'video'
-
-    elif 'text' in mime_type:
-        return 'text-plain'
-
-    return 'binary'  # Generic file
-
-
-def run_thumbnail_gen(script_root=None, total_files=None):
-    """Initialize environment for generating thumbnails"""
-    # Symlink static files to make them accessible when apache is aliased over the actual directory
-    # Creates directory ./<DOCROOT>._static next to ./<DOCROOT>
-    # ./<DOCROOT>._static will be accessible via apache's normal autoindex unless explicity denied
-    # in vhost configuration
-
-    if not script_root:
-        script_root = flask.request.script_root
-
-    DOCROOT = gallery.DOCROOT
-    symlink_src = DOCROOT + script_root + '/'
-    symlink_dest = DOCROOT + script_root + '._static'
-    if not os.path.exists(symlink_dest):
-        os.symlink(symlink_src, symlink_dest)
-
-    # Generate thumbnailails for ALL image files in directory
-    if not os.path.exists(symlink_dest + '/._thumbnails'):
-        os.mkdir(symlink_dest + '/._thumbnails')
-
-    thumbnails(symlink_dest, symlink_dest + '/._thumbnails', total_files)
-    with open('/tmp/galleryindexcount', 'w') as f:
-        f.write('0')
-
-
-def lib_maintainence(script_root):
-    while True:
-        # This command quickly counts the number of objects in the directory
-        # total_files is a list so that I can pass it by reference
-        total_files = [int(subprocess.check_output('find %s/* | wc -l' % (gallery.DOCROOT + script_root),
-                          shell=True).decode('utf-8'))]
-        run_thumbnail_gen(script_root, total_files)
-        # Scan for library changes every 5 minutes
-        time.sleep(300)
+def grants_write_permission(path):
+    """Returns True if the specified path has the write bit set for the current user or group"""
+    if os.access(path, os.W_OK):
+        return True
+    return False
 
 
 @app.before_first_request
-def maintainence_launcher():
-    threading.Thread(target=lib_maintainence, args=(flask.request.script_root,)).start()
+def test_cache_directory():
+    """Returns True if the cache is able to be used; Otherwise False"""
+    cache_dir_path = get_cache_location()
+    try:
+        if not os.path.exists(cache_dir_path):
+            os.makedirs(cache_dir_path)
+        if not grants_write_permission(cache_dir_path):
+            raise PermissionError
+    except PermissionError as e:
+        log_message('The current user (uid %d) does not have permission to write to %s' % (
+                        os.getuid(), cache_dir_path))
+        return False
+    return True
 
 
-@app.route('/<path:subfolder>')
-def gallery(subfolder):
-    DOCROOT = gallery.DOCROOT
+def reformat_filename(filename):
+    n_max = app.config['MAX_LINE_CHARACTERS']
+    l_max = app.config['MAX_LINES_PER_ENTRY']
 
-    env_vars = {}
+    if len(filename) < n_max:
+        return filename
 
-    request_root = '%s/%s' % (flask.request.script_root, subfolder)
-    if request_root.endswith('/'):
-        request_root = request_root[:-1]
+    # HTML will automatically split lines on '-' and ' '. Manually break up the filename at '_'
+    result = ['']
+    for s in filename.split('_'):
+        if (len(result[-1]) + len(s) + 1) > n_max and len(s) < n_max:
+            result.append('')
+        result[-1] += ('_' if result[-1] else '') + s
 
-    env_vars['gallery_root'] = flask.request.script_root
+    if len(result) > l_max:
+        while len(result) > l_max:
+            del result[l_max-2]
+        result[-2] += '...'
 
-    env_vars['current_directory'] = DOCROOT + request_root
-    # Version is arbitrarily incremented to create the illusion of progress
-    env_vars['autogalleryindex_version'] = '0.5.2'
+    filename = ' '.join(result)
 
-    env_vars['request_root'] = request_root
-    env_vars['request_parent'] = '/' + '/'.join(list(filter(None, request_root.split('/')))[:-1])
-    env_vars['subfolder'] = subfolder if (subfolder.endswith('/') or not subfolder) else subfolder + '/'
+    return filename
 
-    items = os.listdir(env_vars['current_directory'])
-    env_vars['dir_contents'] = []
-    for item in items:
-        if item.startswith('.'):
-            # Don't mess with hidden files
+
+@app.route('/<path:relpath>')
+def gallery(relpath):
+    template_vars = {}
+
+    while relpath.endswith(os.path.sep):
+        relpath = relpath[:-1]
+
+    # from_root_relpath is the path from the apache webroot; relpath is only the path from the flask
+    # script "root". from_root_relpath is only useful for transforming paths into absolute local paths
+    from_root_relpath = os.path.join(flask.request.script_root, relpath).strip('/')
+    template_vars['display_path'] = os.path.sep + os.path.join(from_root_relpath, '')
+
+    abs_path = os.path.join(app.config['DOCROOT'], from_root_relpath)
+
+    if not os.path.exists(abs_path):
+        return flask.abort(404)
+
+    if os.path.isfile(abs_path):
+        return flask.send_from_directory(*os.path.split(abs_path))
+
+    template_vars['dir_contents'] = []
+    directory_items = get_directory_contents(abs_path)
+    for item in directory_items:
+        item_abs_path = os.path.join(abs_path, item)
+
+        if not grants_read_permission(item_abs_path):
             continue
-        item_full_path = env_vars['current_directory'] + '/' + item
-        if not os.stat(item_full_path).st_mode & stat.S_IRWXO:
-            # Don't index files without read access
-            continue
-        if os.path.isdir(item_full_path):
-            env_vars['dir_contents'].append((item, 'd'))  # Directory
-            continue
 
-        file_type = get_type(item)
-        if file_type == 'i':
-            if not os.path.exists('%s/._thumbnails/%s%s' % (
-                                   DOCROOT + env_vars['gallery_root'] + '._static',
-                                   env_vars['subfolder'], item)):
-                file_type = 'image'
-        env_vars['dir_contents'].append((item, file_type))
+        file_type = mime.get_type(item_abs_path)
 
-    # Sort directories first, then sort by character
-    env_vars['dir_contents'].sort(key=lambda x: '..%s' % x[0].lower() if x[1] == 'd' else x[0].lower())
+        item_relpath = os.path.join(relpath, item)
 
-    if env_vars['request_root'] != env_vars['request_parent']:  # == '/'
-        env_vars['dir_contents'].insert(0, ('back', 'b'))
+        item = reformat_filename(item)
+        template_vars['dir_contents'].append((item, item_relpath, file_type))
 
-    mobile_tags = ('Android', 'Windows Phone', 'iPod', 'iPhone')
-    # If it's a mobile browser, reduce the number of items displayed per row
-    if any((tag in flask.request.headers.get('User-Agent') for tag in mobile_tags)):
-        env_vars['items_per_row'] = 3
+    template_vars['dir_contents'].sort(key=lambda x: '..%s' % x[0].lower() if x[2] == mime.MIME_DIRECTORY else x[0].lower())
+    # Insert a special entry for the "back" button if applicable
+    if relpath:
+        template_vars['dir_contents'].insert(0, ('Back',
+                                                    os.path.dirname(relpath),
+                                                    mime.MIME_DIRECTORY))
+
+    if is_mobile_request(flask.request.headers):
+        template_vars['items_per_row'] = app.config['ROW_ITEMS_SHORT']
     else:
-        env_vars['items_per_row'] = 5
+        template_vars['items_per_row'] = app.config['ROW_ITEMS_LONG']
 
-    return flask.render_template('Gallery.html', **env_vars)
+    for attr, value in ((attr, getattr(mime, attr)) for attr in dir(mime) if attr.startswith('MIME_')):
+        template_vars[attr] = value
 
+    template_vars['release_version'] = RELEASE_VERSION
 
-@app.route('/getthumbgenstatus/')
-def getthumbgenstatus():
-    with open('/tmp/galleryindexcount', 'r') as f:
-        status = f.read()
-    return status
+    return flask.render_template('Gallery2.html', **template_vars)
 
 
 @app.route('/')
-def rootdir():
+def index():
     return gallery('')
 
 
 if __name__ == '__main__':
-    """For debugging purposes only"""
-    gallery.DOCROOT = '/var/www/html/'
+    # For debugging only
+    app.config['DOCROOT'] = '/var/www/html/GalleryDemo'
+    app.config['CACHE_HOME'] = '/var/www/html/cache/'
     app.run(host='0.0.0.0', port=9001, debug=True)
