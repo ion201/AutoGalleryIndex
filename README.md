@@ -1,6 +1,6 @@
 # AutoGalleryIndex
 
-mod_wsgi application designed to act similar to apache's autoindex but display thumbnail images. Primarily for viewing directories of images. Demo page: http://cloud.natesimon.me/GalleryDemo/
+mod_wsgi application designed to act similar to apache's autoindex but display thumbnail images. Primarily for viewing directories of images. Demo page: http://natesimon.net/GalleryDemo/
 
 Dependencies:
 
@@ -8,9 +8,9 @@ Dependencies:
 * python3.x
 * mod_wsgi (python3)
 
-Debian and derivatives:
+Ubuntu package requirements:
 
-`sudo apt-get install python3-dev libjpeg-dev libtiff5-dev libpng12-dev`
+`python3-dev libjpeg-dev libtiff5-dev libpng12-dev`
 
 Basic setup:
 
