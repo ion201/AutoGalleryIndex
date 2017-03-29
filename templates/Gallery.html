@@ -2,71 +2,47 @@
 
 <html>
 <head>
-    <title>Index of {{ current_directory }}</title>
+    <title>Index of {{ display_path }}</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=.5" />
-    <link rel="stylesheet" type="text/css" href="{{ gallery_root }}/static/grid_layout.css" />
-    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='grid_layout.css') }}" />
 </head>
 
 <body>
-    <h1>Index of {{ request_root }}</h1>
-
-    <p id="thumb_progress"></p>
-    <script type="text/javascript">
-        function getThumbProgress(){
-            //Currently returns 1 if active; 0 if not
-            var progress = $.ajax({ url: '{{ gallery_root }}/getthumbgenstatus/',
-                        datatype: 'text', async: false}).responseText;
-            if (progress == "0"){  // Done
-                if (! this.progress_first_run){
-                    document.getElementById("thumb_progress").innerHTML = "Thumbnails " +
-                    "all generated. <a href='.'>Refresh</a> the page " +
-                    "to see changes";
-                }
-            } else{
-                document.getElementById("thumb_progress").innerHTML = "Files queued to parse: " + progress;
-                this.progress_first_run = false;
-                setTimeout(getThumbProgress, 1000);
-            }
-        }
-        this.progress_first_run = true;
-        getThumbProgress();
-    </script>
+    <h1>Index of {{ display_path }}</h1>
 
     <table>
-        {% for item, type in dir_contents %}
+        {% for item, item_relpath, type in dir_contents %}
             {% if loop.index0 % items_per_row == 0 %}
                 <tr>
             {% endif %}
-            
+
             <td>
-            {% if type == 'b' %}
-                <a href="{{ request_parent }}">
-                <img src="{{ gallery_root }}/static/icons/folder.png" /><br />
-                Back</a>
-            {% elif type == 'd' %}
-                <a href="{{ request_root }}/{{ item }}">
-                <img src="{{ gallery_root }}/static/icons/folder.png" /><br />
-                {{ item }}
-            {% elif type == 'i' %}
-                <a href="{{ gallery_root }}._static/{{ subfolder }}{{ item }}" target="_blank">
-                <img src="{{ gallery_root }}._static/._thumbnails/{{ subfolder }}{{ item }}" />
+            {% if type == MIME_IMAGE_THUMBED %}
+                <a href="" target="_blank">
+                    <img src="" />
+                </a>
             {% else %}
-                <a href="{{ gallery_root }}._static/{{ subfolder }}{{ item}}" target="_blank">
-                <img src="{{ gallery_root }}/static/icons/{{ type }}.png" /><br />
-                {{ item }}
+                {% if type != MIME_DIRECTORY %}
+                    {% set link_target='_blank' %}
+                {% else %}
+                    {% set link_target='' %}
+                {% endif %}
+                <a href="{{ url_for('gallery', relpath=(item_relpath)) }}" target="{{ link_target }}">
+                    <img src="{{ url_for('static', filename='icons/'+type) }}" /><br />
+                    {{ item }}
+                </a>
             {% endif %}
-            <!--{{ item }}-->
-            </a>
             </td>
-            
-            {% if (loop.index) % items_per_row == 0 %}
+
+            {% if (loop.index) % items_per_row == 0 or loop.last %}
                 </tr>
             {% endif %}
-            
+
         {% endfor %}
     </table>
-    
-    <address><a href="https://github.com/ion201/AutoGalleryIndex">AutoGalleryIndex</a>/{{ autogalleryindex_version }}</address>
+
+    <br>
+    <address><a href="https://github.com/ion201/AutoGalleryIndex">AutoGalleryIndex</a>/{{ release_version }}</address>
 </body>
+</html>
