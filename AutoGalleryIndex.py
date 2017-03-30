@@ -150,7 +150,7 @@ def gallery(relpath):
 
     template_vars['release_version'] = RELEASE_VERSION
 
-    return flask.render_template('Gallery2.html', **template_vars)
+    return flask.render_template('Gallery.html', **template_vars)
 
 
 @app.route('/')
