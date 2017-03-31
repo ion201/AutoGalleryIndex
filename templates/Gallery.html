@@ -12,27 +12,18 @@
     <h1>Index of {{ display_path }}</h1>
 
     <table>
-        {% for item, item_relpath, type in dir_contents %}
+        {% for item, item_relpath, type, thumb_path in dir_contents %}
             {% if loop.index0 % items_per_row == 0 %}
                 <tr>
             {% endif %}
 
             <td>
-            {% if type == MIME_IMAGE_THUMBED %}
-                <a href="" target="_blank">
-                    <img src="" />
+                <a href="{{ url_for('gallery', relpath=(item_relpath)) }}" >
+                    <img src="{{ thumb_path }}" />
+                    {% if type != MIME_IMAGE_THUMBED %}
+                    <br>{{ item }}
+                    {% endif %}
                 </a>
-            {% else %}
-                {% if type != MIME_DIRECTORY %}
-                    {% set link_target='_blank' %}
-                {% else %}
-                    {% set link_target='' %}
-                {% endif %}
-                <a href="{{ url_for('gallery', relpath=(item_relpath)) }}" target="{{ link_target }}">
-                    <img src="{{ url_for('static', filename='icons/'+type) }}" /><br />
-                    {{ item }}
-                </a>
-            {% endif %}
             </td>
 
             {% if (loop.index) % items_per_row == 0 or loop.last %}
