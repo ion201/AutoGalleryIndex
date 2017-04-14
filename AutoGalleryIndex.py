@@ -200,14 +200,20 @@ def gallery(relpath):
         item_relpath = os.path.join(relpath, item)
 
         item = reformat_filename(item)
+        # Item = name shown on page
+        # item_relpath = path to use for the link
+        # File type = mime.MIME_XXX type
+        # thumb_path = path to thumbnail for this item
         template_vars['dir_contents'].append((item, item_relpath, file_type, thumb_path))
 
     template_vars['dir_contents'].sort(key=lambda x: '..%s' % x[0].lower() if x[2] == mime.MIME_DIRECTORY else x[0].lower())
     # Insert a special entry for the "back" button if applicable
     if relpath:
+        dir_icon_path = flask.url_for('static', filename=os.path.join('icons', mime.MIME_DIRECTORY))
         template_vars['dir_contents'].insert(0, ('Back',
                                                     os.path.dirname(relpath),
-                                                    mime.MIME_DIRECTORY))
+                                                    mime.MIME_DIRECTORY,
+                                                    dir_icon_path))
 
     if is_mobile_request(flask.request.headers):
         template_vars['items_per_row'] = app.config['ROW_ITEMS_SHORT']

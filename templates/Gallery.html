@@ -18,7 +18,7 @@
             {% endif %}
 
             <td>
-                <a href="{{ url_for('gallery', relpath=(item_relpath)) }}" >
+                <a href="{{ url_for('gallery', relpath=(item_relpath)) }}" title="{{ item_relpath }}" >
                     <img src="{{ thumb_path }}" />
                     {% if type != MIME_IMAGE_THUMBED %}
                     <br>{{ item }}
